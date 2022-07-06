@@ -1,0 +1,271 @@
+<template>
+  <v-container :key="key">
+    <ejs-grid
+      ref="grid"
+      :data-source="dataArr"
+      :toolbar="toolbar"
+      :toolbar-click="clickHandler"
+      :edit-settings="editSettings"
+      :action-begin="actionBegin"
+      :action-complete="actionComplete"
+    >
+      <e-columns>
+        <e-column
+          v-for="(col, i) in cols"
+          :key="i"
+          :is-primary-key="col.key"
+          :field="col.col"
+          :header-text="col.head"
+          :width="col.width"
+          :text-align="col.align"
+          :format="col.format"
+        ></e-column>
+      </e-columns>
+    </ejs-grid>
+  </v-container>
+</template>
+
+<script>
+import Vue from 'vue'
+import { GridPlugin, Edit, Toolbar } from '@syncfusion/ej2-vue-grids'
+import { mapGetters } from 'vuex'
+
+Vue.use(GridPlugin)
+
+export default {
+  name: 'GridTable',
+  provide: {
+    grid: [Toolbar, Edit],
+  },
+  props: {
+    variable: {
+      type: String,
+      required: false,
+      default: 'prem',
+    },
+  },
+  data() {
+    return {
+      edits:[],
+      dataArr: [],
+      cols:[],
+      toolbar: [
+        'Edit',
+        'Update',
+        'Cancel',
+        {
+          text: 'Edit Mode',
+          tooltipText: 'Toggle Edit Mode',
+          prefixIcon: 'e-repeat',
+          id: 'grid_toggle',
+        },
+      ],
+      editSettings: {
+        allowEditing: true,
+        allowAdding: false,
+        allowDeleting: false,
+        mode: 'Normal',
+      },
+    }
+  },
+  computed: {
+    ...mapGetters('simParms', [
+      'getXrow',
+      'getXcol',
+      'getXprem',
+      'getXpremDist',
+      'getXloss',
+      'getXexp',
+      'getXlr',
+      'getXer',
+      'getXcr',
+      'getXcv',
+      'getXsd',
+      'getXcf',
+      'getXcfwt',
+    ]),
+
+    key() {
+      return this.variable + this.getXrow
+    },
+  },
+  created() {
+    this.$nuxt.$on('switch', () => {
+     this.gridRefresh()
+   })
+  },
+  beforeMount() {
+    this.gridRefresh()
+  },
+  Mounted() {
+    
+  },
+
+  methods: {
+    gridRefresh(){
+      this.initTable()
+      this.dataArr = [...this.dataArr]
+      // this.$refs.grid.ej2Instances.refresh()
+    },
+    initTable() {
+      let fmt = 'C0'
+      switch (this.variable) {
+        case 'prem':
+          this.editSettings.allowEditing = true
+          break
+        case 'premDist':
+          this.editSettings.allowEditing = false
+          fmt = 'P1'
+          break
+        case 'lr':
+          this.editSettings.allowEditing = true
+          fmt = 'P1'
+          break
+        case 'er':
+          this.editSettings.allowEditing = true
+          fmt = 'P1'
+          break
+        case 'cr':
+          this.editSettings.allowEditing = false
+          fmt = 'P1'
+          break
+        case 'cv':
+          this.editSettings.allowEditing = true
+          fmt = 'P1'
+          break
+        case 'sd':
+          this.editSettings.allowEditing = false
+          fmt = 'C0'
+          break
+        case 'cf':
+          this.editSettings.allowEditing = true
+          fmt = 'N0'
+          break
+        case 'cfwt':
+          this.editSettings.allowEditing = true
+          fmt = 'P1'
+          break
+        default:
+          this.editSettings.allowEditing = false
+          fmt = 'C0'
+      }
+      this.dataArr = this.getCurrent()
+      this.cols = this.makeColDefs(this.dataArr, fmt, this.getXrow)
+    },
+    getCurrent() {
+      let res = []
+      switch (this.variable) {
+        case 'prem':
+          res = this.arrayCopy(this.getXprem)
+          break
+        case 'premDist':
+          res = this.arrayCopy(this.getXpremDist)
+          break
+        case 'lr':
+          res = this.arrayCopy(this.getXlr)
+          break
+        case 'er':
+          res = this.arrayCopy(this.getXer)
+          break
+        case 'cr':
+          res = this.arrayCopy(this.getXcr)
+          break
+        case 'cv':
+          res = this.arrayCopy(this.getXcv)
+          break
+        case 'sd':
+          res = this.arrayCopy(this.getXsd)
+          break
+        case 'cf':
+          res = this.arrayCopy(this.getXcf)
+          break
+        case 'cfwt':
+          res = this.arrayCopy(this.getXcfwt)
+          break
+        default:
+          res = this.arrayCopy(this.getXprem)
+      }
+      return res
+    },
+    makeColDefs(data, fmt, rowCol) {
+      const cols = Object.keys(data[0]).map((e) => {
+        let key = false
+        if (e === rowCol) {
+          key = true
+        } else key = false
+        return {
+          col: e,
+          head: e,
+          key,
+          width: 40,
+          format: fmt,
+          align: 'Right',
+        }
+      })
+      cols[0].align = 'Left'
+      return cols
+    },
+
+    arrayCopy(arr) {
+      return arr.map((e) => Object.assign({}, e))
+    },
+    clickHandler(args) {
+      if (args.item.id === 'grid_toggle') {
+        const gridIns = this.$refs.grid.ej2Instances
+        if (gridIns.editSettings.mode === 'Normal') {
+          alert('Dialog Edit Mode')
+          gridIns.editSettings.mode = 'Dialog'
+        } else if (gridIns.editSettings.mode === 'Dialog') {
+          alert('Batch Edit Mode')
+          gridIns.editSettings.mode = 'Batch'
+        } else {
+          alert('Normal Edit Mode')
+          gridIns.editSettings.mode = 'Normal'
+        }
+      }
+    },
+    actionBegin(args) {
+      if (args.requestType === 'beginedit') {
+        if (args.rowIndex + 1 === this.dataArr.length) {
+          args.cancel = true
+          alert('You are not able to edit the Total row')
+        }
+      }
+    },
+    actionComplete(args) {
+      switch (args.requestType) {
+        case 'save':
+        case 'batchsave':
+          this.edits = this.xtabSaveEdit()
+          break
+        default:
+      }
+    },
+    xtabSaveEdit() {
+      const oldXtab = this.getCurrent(this.variable)
+      const newXtab = this.dataArr
+      const rows = this.getXrow
+      const cols = Object.keys(newXtab[0]).filter(
+        (e) => e !== rows
+      )
+      const edits = newXtab.map((e, idx) => {
+        const oldRow = oldXtab[idx]
+        const tmp = cols.map((col) => {
+          const tmp = {}
+          tmp[rows] = e[rows]
+          tmp[this.getXcol] = col
+          tmp[this.variable] = e[col]
+          tmp[this.variable + '_old'] = oldRow[col]
+          tmp.chng = e[col] !== oldRow[col]
+          tmp.total = col === 'Total'
+          return tmp
+        })
+        return tmp // .filter(e => e.chng)
+      })
+      return edits
+    },
+  },
+}
+</script>
+
+<style></style>
