@@ -1,6 +1,7 @@
 <template>
   <v-container :key="key">
     <ejs-grid
+      id="app"
       ref="grid"
       :data-source="dataArr"
       :toolbar="toolbar"
@@ -22,6 +23,14 @@
         ></e-column>
       </e-columns>
     </ejs-grid>
+
+      <v-card class="py-5 mb-5">
+        <h5 class="mb-5">Bound dataSource ( = dataArr) Value</h5>
+        <div>
+          <pre>{{ JSON.stringify(dataArr, null, 2)}}</pre>
+        </div>
+      </v-card>
+
   </v-container>
 </template>
 
@@ -46,20 +55,10 @@ export default {
   },
   data() {
     return {
-      edits:[],
+      edits: [],
       dataArr: [],
-      cols:[],
-      toolbar: [
-        'Edit',
-        'Update',
-        'Cancel',
-        {
-          text: 'Edit Mode',
-          tooltipText: 'Toggle Edit Mode',
-          prefixIcon: 'e-repeat',
-          id: 'grid_toggle',
-        },
-      ],
+      cols: [],
+      toolbar: ['Edit', 'Update', 'Cancel'],
       editSettings: {
         allowEditing: true,
         allowAdding: false,
@@ -69,21 +68,7 @@ export default {
     }
   },
   computed: {
-    ...mapGetters('simParms', [
-      'getXrow',
-      'getXcol',
-      'getXprem',
-      'getXpremDist',
-      'getXloss',
-      'getXexp',
-      'getXlr',
-      'getXer',
-      'getXcr',
-      'getXcv',
-      'getXsd',
-      'getXcf',
-      'getXcfwt',
-    ]),
+    ...mapGetters('simParms', ['getXrow', 'getXcol', 'getXprem']),
 
     key() {
       return this.variable + this.getXrow
@@ -91,18 +76,17 @@ export default {
   },
   created() {
     this.$nuxt.$on('switch', () => {
-     this.gridRefresh()
-   })
-  },
-  beforeMount() {
+    })
     this.gridRefresh()
   },
-  Mounted() {
+  beforeMount() {
     
+  },
+  Mounted() {
   },
 
   methods: {
-    gridRefresh(){
+    gridRefresh() {
       this.initTable()
       this.dataArr = [...this.dataArr]
       // this.$refs.grid.ej2Instances.refresh()
@@ -112,38 +96,6 @@ export default {
       switch (this.variable) {
         case 'prem':
           this.editSettings.allowEditing = true
-          break
-        case 'premDist':
-          this.editSettings.allowEditing = false
-          fmt = 'P1'
-          break
-        case 'lr':
-          this.editSettings.allowEditing = true
-          fmt = 'P1'
-          break
-        case 'er':
-          this.editSettings.allowEditing = true
-          fmt = 'P1'
-          break
-        case 'cr':
-          this.editSettings.allowEditing = false
-          fmt = 'P1'
-          break
-        case 'cv':
-          this.editSettings.allowEditing = true
-          fmt = 'P1'
-          break
-        case 'sd':
-          this.editSettings.allowEditing = false
-          fmt = 'C0'
-          break
-        case 'cf':
-          this.editSettings.allowEditing = true
-          fmt = 'N0'
-          break
-        case 'cfwt':
-          this.editSettings.allowEditing = true
-          fmt = 'P1'
           break
         default:
           this.editSettings.allowEditing = false
@@ -157,30 +109,6 @@ export default {
       switch (this.variable) {
         case 'prem':
           res = this.arrayCopy(this.getXprem)
-          break
-        case 'premDist':
-          res = this.arrayCopy(this.getXpremDist)
-          break
-        case 'lr':
-          res = this.arrayCopy(this.getXlr)
-          break
-        case 'er':
-          res = this.arrayCopy(this.getXer)
-          break
-        case 'cr':
-          res = this.arrayCopy(this.getXcr)
-          break
-        case 'cv':
-          res = this.arrayCopy(this.getXcv)
-          break
-        case 'sd':
-          res = this.arrayCopy(this.getXsd)
-          break
-        case 'cf':
-          res = this.arrayCopy(this.getXcf)
-          break
-        case 'cfwt':
-          res = this.arrayCopy(this.getXcfwt)
           break
         default:
           res = this.arrayCopy(this.getXprem)
@@ -207,7 +135,11 @@ export default {
     },
 
     arrayCopy(arr) {
-      return arr.map((e) => Object.assign({}, e))
+      return arr.map((e) => {
+        let tmp = JSON.stringify(e)
+        tmp=JSON.parse(tmp)
+        return tmp
+    })
     },
     clickHandler(args) {
       if (args.item.id === 'grid_toggle') {
@@ -235,7 +167,6 @@ export default {
     actionComplete(args) {
       switch (args.requestType) {
         case 'save':
-        case 'batchsave':
           this.edits = this.xtabSaveEdit()
           break
         default:
@@ -245,9 +176,7 @@ export default {
       const oldXtab = this.getCurrent(this.variable)
       const newXtab = this.dataArr
       const rows = this.getXrow
-      const cols = Object.keys(newXtab[0]).filter(
-        (e) => e !== rows
-      )
+      const cols = Object.keys(newXtab[0]).filter((e) => e !== rows)
       const edits = newXtab.map((e, idx) => {
         const oldRow = oldXtab[idx]
         const tmp = cols.map((col) => {

@@ -13,17 +13,11 @@
     <v-tabs-items v-model="tab">
 
       <v-tab-item>
-        <div>
-          <div class="d-flex justify-space-between">
-            <h3 class="mb-5">Underwriting Variables Cross Tabs</h3>
-            <v-btn class="ma-2" small rounded @click="switchClick"
-              >Switch</v-btn
-            >
-          </div>
-          <dash-board2 ></dash-board2>
+          <dash-board2></dash-board2>
         </div>
-      </v-tab-item>
 
+
+      </v-tab-item>
     </v-tabs-items>
   </v-container>
 </template>
